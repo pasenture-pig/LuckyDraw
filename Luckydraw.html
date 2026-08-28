@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎲 多组抽奖系统 (不重复·空格追加)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background: linear-gradient(145deg, #f5f7fc 0%, #eaeef5 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .app-container {
+            max-width: 1280px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 48px;
+            box-shadow: 0 25px 50px -10px rgba(0, 20, 30, 0.25);
+            padding: 30px 30px 40px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        h1 {
+            font-size: 2.4rem;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            color: #1b2b3f;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px dashed rgba(60, 80, 120, 0.2);
+            flex-wrap: wrap;
+        }
+        h1 small {
+            font-size: 1rem;
+            font-weight: 400;
+            color: #3b4e6b;
+            background: rgba(60, 80, 120, 0.08);
+            padding: 4px 14px;
+            border-radius: 40px;
+            margin-left: 8px;
+        }
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.6fr;
+            gap: 28px;
+            margin-top: 10px;
+        }
+        @media (max-width: 820px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border-radius: 32px;
+            padding: 24px 20px;
+            box-shadow: inset 0 1px 3px rgba(255,255,255,0.7), 0 8px 20px rgba(0,0,0,0.02);
+            border: 1px solid rgba(255,255,255,0.7);
+        }
+        .panel-title {
+            font-weight: 600;
+            font-size: 1.2rem;
+            color: #1f3347;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 18px;
+        }
+        .panel-title .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .panel-title button {
+            background: #dce3ef;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-weight: 500;
+            font-size: 0.8rem;
+            color: #1f3a57;
+            cursor: pointer;
+            transition: 0.15s;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        .panel-title button:hover {
+            background: #c8d2e3;
+            transform: scale(0.96);
+        }
+        .panel-title button.danger {
+            background: #f3d7d7;
+            color: #8f3b3b;
+        }
+        .panel-title button.danger:hover {
+            background: #ecc2c2;
+        }
+        .group-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 18px;
+        }
+        .group-btn {
+            background: rgba(220, 230, 245, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            padding: 8px 18px;
+            border-radius: 40px;
+            font-weight: 500;
+            color: #1f3a57;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-size: 0.9rem;
+            backdrop-filter: blur(2px);
+            flex: 0 1 auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .group-btn.active {
+            background: #1f3a57;
+            color: white;
+            border-color: #1f3a57;
+            box-shadow: 0 4px 10px rgba(26, 67, 113, 0.2);
+        }
+        .group-btn:hover:not(.active) {
+            background: rgba(200, 215, 235, 0.7);
+        }
+        .group-btn .group-menu {
+            font-size: 0.7rem;
+            opacity: 0.6;
+            margin-left: 4px;
+            cursor: pointer;
+        }
+        .input-area {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 10px;
+        }
+        .input-area label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #2a4059;
+        }
+        .input-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .input-row input {
+            flex: 2;
+            min-width: 150px;
+            padding: 12px 16px;
+            border-radius: 40px;
+            border: 1px solid rgba(160, 180, 200, 0.3);
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(4px);
+            font-size: 0.95rem;
+            transition: 0.15s;
+            outline: none;
+        }
+        .input-row input:focus {
+            border-color: #2b4c73;
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 0 0 3px rgba(43, 76, 115, 0.15);
+        }
+        .input-row button {
+            background: #2b4c73;
+            border: none;
+            color: white;
+            padding: 12px 22px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.15s;
+            white-space: nowrap;
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 4px 8px rgba(0, 20, 40, 0.1);
+        }
+        .input-row button:hover {
+            background: #1d3a5a;
+            transform: scale(0.97);
+        }
+        .input-row button.secondary {
+            background: #dce3ef;
+            color: #1f3347;
+        }
+        .input-row button.secondary:hover {
+            background: #c8d2e3;
+        }
+        .member-list-box {
+            margin-top: 20px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 24px;
+            padding: 16px 14px;
+            max-height: 260px;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+        .member-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 10px 6px 16px;
+            margin-bottom: 4px;
+            border-radius: 40px;
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(2px);
+            transition: 0.1s;
+        }
+        .member-item:hover {
+            background: rgba(255, 255, 255, 0.7);
+        }
+        .member-item span {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #1f3347;
+        }
+        .member-item button {
+            background: transparent;
+            border: none;
+            color: #7b5a5a;
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 4px 10px;
+            border-radius: 30px;
+            transition: 0.1s;
+        }
+        .member-item button:hover {
+            background: rgba(180, 70, 70, 0.1);
+            color: #a13d3d;
+        }
+        .empty-tip {
+            color: #5d7188;
+            text-align: center;
+            padding: 24px 0;
+            font-style: italic;
+            opacity: 0.7;
+        }
+
+        .draw-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .result-box {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(4px);
+            border-radius: 40px;
+            padding: 24px 20px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .result-label {
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            color: #3a5670;
+            opacity: 0.7;
+            margin-bottom: 8px;
+        }
+        .result-name {
+            font-size: 2.8rem;
+            font-weight: 700;
+            color: #0b1e30;
+            line-height: 1.3;
+            word-break: break-word;
+            max-width: 100%;
+        }
+        .result-name.placeholder {
+            opacity: 0.3;
+            font-weight: 400;
+            font-size: 1.6rem;
+        }
+        .result-name.multi {
+            font-size: 1.8rem;
+            line-height: 1.5;
+        }
+        .draw-actions {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 6px;
+        }
+        .draw-btn {
+            background: #1f3a57;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: white;
+            cursor: pointer;
+            transition: 0.15s;
+            box-shadow: 0 6px 16px rgba(26, 56, 94, 0.25);
+            flex: 1 1 auto;
+            min-width: 120px;
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+        .draw-btn:hover {
+            background: #12314b;
+            transform: scale(0.97);
+        }
+        .draw-btn:active {
+            transform: scale(0.94);
+        }
+        .draw-btn.secondary {
+            background: #dce3ef;
+            color: #1f3347;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+        }
+        .draw-btn.secondary:hover {
+            background: #c8d2e3;
+        }
+        .draw-options {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+            background: rgba(255,255,255,0.2);
+            padding: 10px 16px;
+            border-radius: 60px;
+            backdrop-filter: blur(2px);
+        }
+        .draw-options label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.9rem;
+            color: #1f3347;
+            cursor: pointer;
+        }
+        .draw-options input[type="number"] {
+            width: 60px;
+            padding: 6px 8px;
+            border-radius: 30px;
+            border: 1px solid rgba(160, 180, 200, 0.4);
+            background: rgba(255,255,255,0.5);
+            text-align: center;
+            font-weight: 600;
+            outline: none;
+        }
+        .history-area {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 28px;
+            padding: 16px 18px;
+            border: 1px solid rgba(255,255,255,0.6);
+        }
+        .history-title {
+            font-weight: 500;
+            color: #2f4a66;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .history-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 10px;
+            min-height: 38px;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+        .history-tag {
+            background: rgba(255, 255, 255, 0.6);
+            padding: 4px 14px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            border: 1px solid rgba(200, 200, 220, 0.3);
+            color: #1a2f44;
+        }
+        .clear-history {
+            background: transparent;
+            border: none;
+            color: #6a7f99;
+            cursor: pointer;
+            font-size: 0.8rem;
+            text-decoration: underline dotted;
+        }
+        .footer-notes {
+            margin-top: 18px;
+            display: flex;
+            justify-content: flex-end;
+            font-size: 0.8rem;
+            color: #5b718a;
+            opacity: 0.7;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .status-badge {
+            background: rgba(30, 60, 100, 0.08);
+            padding: 2px 14px;
+            border-radius: 30px;
+            font-size: 0.75rem;
+        }
+        .unique-badge {
+            background: rgba(26, 115, 70, 0.12);
+            color: #1a6b3a;
+            padding: 2px 14px;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+<div class="app-container" id="app">
+    <h1>
+        🎲 抽奖系统
+        <small>多组 · 空格追加 · 不重复抽奖</small>
+    </h1>
+    <div class="main-grid">
+        <!-- 左侧：名单管理 -->
+        <div class="panel">
+            <div class="panel-title">
+                <span>📋 名单组</span>
+                <div class="actions">
+                    <button id="addGroupBtn">➕ 新增组</button>
+                </div>
+            </div>
+            <div class="group-selector" id="groupSelector"></div>
+
+            <div class="input-area">
+                <label>✏️ 添加成员 (空格分隔，自动追加)</label>
+                <div class="input-row">
+                    <input type="text" id="memberInput" placeholder="张三 李四 王五" />
+                    <button id="appendMemberBtn">➕ 追加</button>
+                </div>
+                <div class="input-row">
+                    <button id="clearGroupBtn" class="secondary" style="flex:1;">🗑️ 清空当前组</button>
+                </div>
+            </div>
+
+            <div class="member-list-box" id="memberListContainer">
+                <div class="empty-tip">当前组暂无成员</div>
+            </div>
+        </div>
+
+        <!-- 右侧：抽奖 -->
+        <div class="draw-panel">
+            <div class="result-box">
+                <div class="result-label">🎯 中奖者</div>
+                <div class="result-name placeholder" id="resultDisplay">等待抽奖</div>
+            </div>
+
+            <!-- 抽奖选项 -->
+            <div class="draw-options">
+                <span class="unique-badge">🔁 不重复模式</span>
+                <label>
+                    抽取人数:
+                    <input type="number" id="drawCount" value="1" min="1" max="50">
+                </label>
+                <button class="draw-btn" id="drawMultiBtn" style="padding:8px 24px; font-size:0.9rem; min-width:auto;">🎲 抽奖</button>
+            </div>
+
+            <div class="draw-actions">
+                <button class="draw-btn" id="drawResetBtn" style="flex:0.5;">🔄 重置池</button>
+            </div>
+
+            <div class="history-area">
+                <div class="history-title">
+                    <span>📜 最近抽奖记录</span>
+                    <button class="clear-history" id="clearHistoryBtn">清除记录</button>
+                </div>
+                <div class="history-list" id="historyList"></div>
+            </div>
+            <div class="footer-notes">
+                <span>💡 空格分隔名字，自动追加到当前组</span>
+                <span class="status-badge" id="statusBadge">⚡ 就绪</span>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    (function() {
+        // ---------- 核心数据结构 ----------
+        let groups = [];
+        let currentGroupId = null;
+        let history = [];
+        let resultTimeout = null;
+        let availablePool = []; // 不重复抽奖池
+
+        // DOM 元素
+        const groupSelectorEl = document.getElementById('groupSelector');
+        const memberInput = document.getElementById('memberInput');
+        const memberListContainer = document.getElementById('memberListContainer');
+        const resultDisplay = document.getElementById('resultDisplay');
+        const historyList = document.getElementById('historyList');
+        const statusBadge = document.getElementById('statusBadge');
+
+        const addGroupBtn = document.getElementById('addGroupBtn');
+        const appendMemberBtn = document.getElementById('appendMemberBtn');
+        const clearGroupBtn = document.getElementById('clearGroupBtn');
+        const drawMultiBtn = document.getElementById('drawMultiBtn');
+        const drawResetBtn = document.getElementById('drawResetBtn');
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+        const drawCountInput = document.getElementById('drawCount');
+
+        // ---------- 辅助函数 ----------
+        function generateId() { return Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,6); }
+
+        function parseNames(str) {
+            if (!str.trim()) return [];
+            return str.trim().split(/\s+/).filter(s => s.length > 0);
+        }
+
+        function saveData() {
+            const data = { groups, currentGroupId, history };
+            localStorage.setItem('lottery_data', JSON.stringify(data));
+        }
+
+        function loadData() {
+            const raw = localStorage.getItem('lottery_data');
+            if (!raw) return false;
+            try {
+                const data = JSON.parse(raw);
+                groups = data.groups || [];
+                currentGroupId = data.currentGroupId || null;
+                history = data.history || [];
+                if (currentGroupId && !groups.some(g => g.id === currentGroupId)) {
+                    currentGroupId = groups.length > 0 ? groups[0].id : null;
+                }
+                return true;
+            } catch (e) { return false; }
+        }
+
+        function initDefaultData() {
+            if (groups.length === 0) {
+                const defaultGroup = { id: generateId(), name: '默认组', members: ['张三', '李四', '王五', '赵六', '陈七'] };
+                groups = [defaultGroup];
+                currentGroupId = defaultGroup.id;
+                history = [];
+            } else if (!currentGroupId) {
+                currentGroupId = groups[0].id;
+            }
+            saveData();
+        }
+
+        // ---------- 渲染 ----------
+        function renderAll() {
+            renderGroupSelector();
+            renderMemberList();
+            renderHistory();
+            updateStatus();
+        }
+
+        function renderGroupSelector() {
+            let html = '';
+            groups.forEach(g => {
+                const active = (g.id === currentGroupId) ? 'active' : '';
+                html += `
+                    <button class="group-btn ${active}" data-id="${g.id}">
+                        ${g.name} (${g.members.length})
+                        <span class="group-menu" data-action="edit" title="编辑组名">✎</span>
+                        <span class="group-menu" data-action="delete" title="删除组">✕</span>
+                    </button>
+                `;
+            });
+            groupSelectorEl.innerHTML = html;
+            document.querySelectorAll('.group-btn').forEach(btn => {
+                const id = btn.dataset.id;
+                btn.addEventListener('click', function(e) {
+                    if (e.target.classList.contains('group-menu')) return;
+                    if (id && id !== currentGroupId) {
+                        currentGroupId = id;
+                        saveData();
+                        renderAll();
+                    }
+                });
+                const editSpan = btn.querySelector('[data-action="edit"]');
+                if (editSpan) {
+                    editSpan.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        editGroupName(id);
+                    });
+                }
+                const delSpan = btn.querySelector('[data-action="delete"]');
+                if (delSpan) {
+                    delSpan.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        deleteGroup(id);
+                    });
+                }
+            });
+        }
+
+        function renderMemberList() {
+            const group = groups.find(g => g.id === currentGroupId);
+            if (!group) {
+                memberListContainer.innerHTML = `<div class="empty-tip">请选择或创建组</div>`;
+                memberInput.placeholder = '暂无组';
+                return;
+            }
+            memberInput.placeholder = `向「${group.name}」追加成员 (空格分隔)`;
+            if (group.members.length === 0) {
+                memberListContainer.innerHTML = `<div class="empty-tip">✨ 此组暂无成员</div>`;
+            } else {
+                let html = '';
+                group.members.forEach((member, index) => {
+                    html += `
+                        <div class="member-item">
+                            <span>${index+1}. ${member}</span>
+                            <button data-index="${index}" class="delete-member-btn">✕</button>
+                        </div>
+                    `;
+                });
+                memberListContainer.innerHTML = html;
+                document.querySelectorAll('.delete-member-btn').forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        const idx = parseInt(this.dataset.index, 10);
+                        if (!isNaN(idx)) deleteMemberByIndex(idx);
+                    });
+                });
+            }
+        }
+
+        function renderHistory() {
+            if (history.length === 0) {
+                historyList.innerHTML = `<span style="color:#7a8fa8;font-size:0.8rem;opacity:0.6;">暂无记录</span>`;
+                return;
+            }
+            let html = '';
+            const show = history.slice(-10).reverse();
+            show.forEach(item => {
+                html += `<span class="history-tag">${item}</span>`;
+            });
+            historyList.innerHTML = html;
+        }
+
+        function updateStatus() {
+            const group = getCurrentGroup();
+            const count = group ? group.members.length : 0;
+            const poolSize = availablePool.length;
+            statusBadge.textContent = `👥 ${count} 人 · 池中 ${poolSize} 人可抽`;
+        }
+
+        // ---------- 业务操作 ----------
+        function getCurrentGroup() {
+            return groups.find(g => g.id === currentGroupId) || null;
+        }
+
+        function deleteMemberByIndex(index) {
+            const group = getCurrentGroup();
+            if (!group) return;
+            if (index >= 0 && index < group.members.length) {
+                group.members.splice(index, 1);
+                saveData();
+                renderAll();
+            }
+        }
+
+        // 追加成员 (从input解析，追加到当前组)
+        function appendMembers() {
+            const group = getCurrentGroup();
+            if (!group) {
+                alert('请先选择或创建组');
+                return;
+            }
+            const raw = memberInput.value;
+            const names = parseNames(raw);
+            if (names.length === 0) {
+                alert('请输入有效名字，用空格分隔');
+                return;
+            }
+            group.members = group.members.concat(names);
+            saveData();
+            renderAll();
+            memberInput.value = '';
+        }
+
+        function clearCurrentGroup() {
+            const group = getCurrentGroup();
+            if (!group) return;
+            if (group.members.length === 0) return;
+            if (confirm(`确定清空「${group.name}」所有成员吗？`)) {
+                group.members = [];
+                saveData();
+                renderAll();
+            }
+        }
+
+        function addNewGroup() {
+            const name = prompt('请输入新组名称:', `组 ${groups.length+1}`);
+            if (name === null) return;
+            const trimmed = name.trim();
+            if (!trimmed) { alert('组名不能为空'); return; }
+            if (groups.some(g => g.name === trimmed)) { alert('已存在同名组'); return; }
+            const newGroup = { id: generateId(), name: trimmed, members: [] };
+            groups.push(newGroup);
+            currentGroupId = newGroup.id;
+            saveData();
+            renderAll();
+        }
+
+        function editGroupName(groupId) {
+            const group = groups.find(g => g.id === groupId);
+            if (!group) return;
+            const newName = prompt('修改组名:', group.name);
+            if (newName === null) return;
+            const trimmed = newName.trim();
+            if (!trimmed) { alert('组名不能为空'); return; }
+            if (groups.some(g => g.id !== groupId && g.name === trimmed)) {
+                alert('已存在同名组');
+                return;
+            }
+            group.name = trimmed;
+            saveData();
+            renderAll();
+        }
+
+        function deleteGroup(groupId) {
+            if (groups.length <= 1) {
+                alert('至少保留一个组');
+                return;
+            }
+            const group = groups.find(g => g.id === groupId);
+            if (!group) return;
+            if (!confirm(`确定删除组「${group.name}」吗？该操作不可撤销。`)) return;
+            groups = groups.filter(g => g.id !== groupId);
+            if (currentGroupId === groupId) {
+                currentGroupId = groups[0].id;
+            }
+            saveData();
+            renderAll();
+        }
+
+        // ---------- 抽奖核心 (不重复) ----------
+        function performDraw() {
+            const group = getCurrentGroup();
+            if (!group) { alert('请先选择组'); return; }
+            const members = group.members;
+            if (members.length === 0) { alert('当前组没有成员'); return; }
+
+            // 如果池子未初始化或与成员列表不同步，重建池
+            if (!availablePool.length || availablePool.length !== members.length) {
+                availablePool = [...members];
+            }
+
+            if (availablePool.length === 0) {
+                alert('所有成员已抽完，请点击「重置池」重新开始');
+                return;
+            }
+
+            const count = parseInt(drawCountInput.value, 10) || 1;
+            if (count < 1) { alert('抽取人数至少为1'); return; }
+
+            const actualCount = Math.min(count, availablePool.length);
+            const winners = [];
+            for (let i = 0; i < actualCount; i++) {
+                const idx = Math.floor(Math.random() * availablePool.length);
+                winners.push(availablePool[idx]);
+                availablePool.splice(idx, 1);
+            }
+
+            displayWinners(winners);
+            winners.forEach(w => {
+                history.push(w);
+                if (history.length > 20) history.shift();
+            });
+            saveData();
+            renderHistory();
+            updateStatus();
+
+            if (availablePool.length === 0) {
+                setTimeout(() => alert('🎉 所有成员已抽完！点击「重置池」可重新开始'), 300);
+            }
+        }
+
+        function displayWinners(winners) {
+            if (winners.length === 0) return;
+            if (winners.length === 1) {
+                resultDisplay.textContent = winners[0];
+                resultDisplay.classList.remove('placeholder', 'multi');
+            } else {
+                resultDisplay.textContent = winners.join('  ·  ');
+                resultDisplay.classList.remove('placeholder');
+                resultDisplay.classList.add('multi');
+            }
+            clearTimeout(resultTimeout);
+        }
+
+        function resetDrawResult() {
+            resultDisplay.textContent = '等待抽奖';
+            resultDisplay.classList.add('placeholder');
+            resultDisplay.classList.remove('multi');
+            const group = getCurrentGroup();
+            if (group) {
+                availablePool = [...group.members];
+            } else {
+                availablePool = [];
+            }
+            updateStatus();
+            clearTimeout(resultTimeout);
+        }
+
+        function clearHistory() {
+            if (history.length === 0) return;
+            history = [];
+            saveData();
+            renderHistory();
+        }
+
+        function resetPool() {
+            const group = getCurrentGroup();
+            if (group) {
+                availablePool = [...group.members];
+            } else {
+                availablePool = [];
+            }
+            updateStatus();
+            // 同时重置显示
+            resultDisplay.textContent = '等待抽奖';
+            resultDisplay.classList.add('placeholder');
+            resultDisplay.classList.remove('multi');
+        }
+
+        // ---------- 初始化 ----------
+        function init() {
+            const loaded = loadData();
+            if (!loaded) initDefaultData();
+            else {
+                if (currentGroupId && !groups.some(g => g.id === currentGroupId)) {
+                    currentGroupId = groups.length > 0 ? groups[0].id : null;
+                }
+                if (!currentGroupId && groups.length > 0) currentGroupId = groups[0].id;
+                saveData();
+            }
+            resetPool();
+            renderAll();
+
+            addGroupBtn.addEventListener('click', addNewGroup);
+            appendMemberBtn.addEventListener('click', appendMembers);
+            clearGroupBtn.addEventListener('click', clearCurrentGroup);
+            drawMultiBtn.addEventListener('click', performDraw);
+            drawResetBtn.addEventListener('click', resetDrawResult);
+            clearHistoryBtn.addEventListener('click', clearHistory);
+
+            drawCountInput.addEventListener('change', function() {
+                let val = parseInt(this.value, 10);
+                if (isNaN(val) || val < 1) this.value = 1;
+                if (val > 50) this.value = 50;
+            });
+
+            memberInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    appendMembers();
+                }
+            });
+
+            const origRenderAll = renderAll;
+            renderAll = function() {
+                origRenderAll();
+                resetPool();
+            };
+            renderAll();
+        }
+
+        init();
+    })();
+</script>
+</body>
+</html>
